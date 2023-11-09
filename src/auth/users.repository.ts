@@ -7,9 +7,12 @@ import {
 } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import * as bcrypt from 'bcrypt';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
+  private logger = new Logger('UserRepository');
+
   constructor(private datasource: DataSource) {
     super(User, datasource.createEntityManager());
   }
@@ -24,11 +27,13 @@ export class UserRepository extends Repository<User> {
 
     try {
       await this.save(user);
+      this.logger.log(`User "${user.username}" was created.`);
     } catch (error) {
       if (error.code === '23505') {
         // duplicate username
         throw new ConflictException('Username already exists');
       } else {
+        this.logger.error(`Failed to create user`, error);
         throw new InternalServerErrorException();
       }
     }
